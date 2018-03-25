@@ -27,20 +27,12 @@ public class CircularList<E> implements List<E>{
 	}
 
 	// appends an element to the end of the list
-	// current element is then set to the newly added element
 	@Override
 	public boolean add(E e) {
 		CircularNode<E> newNode = new CircularNode<E>(e);
-		
-		CircularNode<E> cacheCurrent = this.current;
 
-		this.current = this.first;
-		
-		this.insert(newNode);
-		
-		if (cacheCurrent != null)
-			this.current = cacheCurrent;
-		
+		this.insert(getFirst(), newNode);
+
 		return true;
 	}
 
@@ -48,36 +40,26 @@ public class CircularList<E> implements List<E>{
 	public void add(int index, E element) {
 		if (index < 0 || index > size()) 
 			throw new IndexOutOfBoundsException();
-		
-		CircularNode<E> cacheCurrent = this.current;
 
-		this.current = this.first;
+		CircularNode<E> target = this.getFirst();
 		
 		for (int i = 0; i < index; i++) 
-			current = current.getNext();
+			target = target.getNext();
 		
 		CircularNode<E> newNode = new CircularNode<E>(element);
 
-		this.insert(newNode);
-		
-		if (cacheCurrent != null)
-			this.current = cacheCurrent;
+		this.insert(target, newNode);
+
 	}
 
 	@Override
 	public boolean addAll(Collection<? extends E> c) {
-		CircularNode<E> cacheCurrent = this.current;
 
-		this.current = this.first;
-		
 		for (E elem : c) {
 			CircularNode<E> newNode = new CircularNode<E>(elem);
-			this.insert(newNode);
+			this.insert(getFirst(), newNode);
 		}
-		
-		if (cacheCurrent != null)
-			this.current = cacheCurrent;
-		
+
 		return true;
 	}
 
@@ -86,20 +68,15 @@ public class CircularList<E> implements List<E>{
 		if (index < 0 || index > size()) 
 			throw new IndexOutOfBoundsException();
 		
-		CircularNode<E> cacheCurrent = this.current;
-
-		this.current = this.first;
+		CircularNode<E> target = this.getFirst();
 		
 		for (int i = 0; i < index; i++) 
-			current = current.getNext();
+			target = target.getNext();
 		
 		for (E elem : c) {
 			CircularNode<E> newNode = new CircularNode<E>(elem);
-			this.insert(newNode);
+			this.insert(target, newNode);
 		}
-		
-		if (cacheCurrent != null)
-			this.current = cacheCurrent;
 		
 		return true;
 	}
@@ -138,7 +115,7 @@ public class CircularList<E> implements List<E>{
 
 	@Override
 	public boolean isEmpty() {
-		if (this.size == 0) 
+		if (this.size() == 0) 
 			return true;
 		else
 			return false;
@@ -157,8 +134,7 @@ public class CircularList<E> implements List<E>{
 
 	@Override
 	public ListIterator<E> listIterator() {
-		// TODO Auto-generated method stub
-		return null;
+		return new CircularListIterator<E>(this); 
 	}
 
 	@Override
@@ -169,20 +145,45 @@ public class CircularList<E> implements List<E>{
 
 	@Override
 	public boolean remove(Object o) {
-		// TODO Auto-generated method stub
+		int size = this.getSize();
+		CircularNode<E> target = this.getFirst();
+		for (int i = 0; i < size; i++) {
+			if (target.getElement().equals(o)) {
+				delete(target);
+				return true;
+			}
+			target = target.getNext();
+		}
 		return false;
 	}
 
 	@Override
 	public E remove(int index) {
-		// TODO Auto-generated method stub
-		return null;
+		if (index < 0 || index > size()) 
+			throw new IndexOutOfBoundsException();
+		
+		CircularNode<E> target = this.getFirst();
+		for (int i = 0; i < index; i++) 
+			target = target.getNext();
+		
+		return delete(target);
 	}
 
 	@Override
 	public boolean removeAll(Collection<?> c) {
-		// TODO Auto-generated method stub
-		return false;
+		int size = this.getSize();
+		boolean changed = false;
+		CircularNode<E> target = this.getFirst();
+		for (int i = 0; i < size; i++) {
+			for (Object o : c) {
+				if (target.getElement().equals(o)) {
+					delete(target);
+					changed = true;
+				}
+			}
+			target = target.getNext();
+		}
+		return changed;
 	}
 
 	@Override
@@ -227,35 +228,63 @@ public class CircularList<E> implements List<E>{
 		return null;
 	}
 	
-	// inserts newNode between current.getPrev() and current node
+	// inserts newNode between toPrev.getPrev() and toPrev node
 	// current node stays the same unless the list was empty,
 	// in which case the null value is set to the newly inserted node
-	private void insert(CircularNode<E> newNode) {
-		if (this.isEmpty()) 
+	protected void insert(CircularNode<E> toPrev, CircularNode<E> newNode) {
+		if (this.isEmpty()) {
 			this.current = newNode;
+			this.first = newNode;
+			toPrev = newNode;
+		}
 		
-		CircularNode<E> nextNode = this.current.getPrev();
+		CircularNode<E> prevNode = toPrev.getPrev();
 		
-		this.current.appendToPrev(newNode);
-		nextNode.appendToNext(newNode);
+		toPrev.appendToPrev(newNode);
+		prevNode.appendToNext(newNode);
 
 		this.size++;
 	}
+	
+	protected E delete(CircularNode<E> toDelete) {
+		if (this.getSize() == 1) {
+			this.current = null;
+			this.first = null;
+		}
+		else {
+			CircularNode<E> prev = toDelete.getPrev();
+			CircularNode<E>	next = toDelete.getNext();
+			
+			this.current = prev;
+			
+			prev.appendToNext(next);
+			next.appendToPrev(prev);
+		}
+		
+		this.size--;
+		
+		return toDelete.getElement();
+	}
 
-	public CircularNode<E> getCurrent() {
+	protected CircularNode<E> getCurrent() {
 		return current;
 	}
 
-	public void setCurrent(CircularNode<E> current) {
+	protected void setCurrent(CircularNode<E> current) {
 		this.current = current;
 	}
 
-	public CircularNode<E> getFirst() {
+	protected CircularNode<E> getFirst() {
 		return first;
 	}
 
-	public void setFirst(CircularNode<E> first) {
+	protected void setFirst(CircularNode<E> first) {
 		this.first = first;
+	}
+	
+	protected CircularNode<E> getLast() {
+		if (isEmpty()) return null;
+		else return this.getLast();
 	}
 
 	public int getSize() {
@@ -264,5 +293,16 @@ public class CircularList<E> implements List<E>{
 
 	public void setSize(int size) {
 		this.size = size;
+	}
+	
+	public String toString() {
+		String sum = "[";
+		
+		for (E elem : this)
+			sum += elem + ", ";
+		
+		sum = sum.substring(0, sum.length() - 2);
+		
+		return sum + "]";
 	}
 }

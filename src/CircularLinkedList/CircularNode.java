@@ -45,4 +45,8 @@ public class CircularNode<E> {
 		this.prev = appendant;
 		appendant.next = this;
 	}
+	
+	public String toString() {
+		return "CNode: " + element.toString();
+	}
 }
